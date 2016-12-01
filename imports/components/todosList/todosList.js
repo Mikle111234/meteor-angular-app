@@ -1,85 +1,93 @@
 import angular from 'angular';
 import angularMeteor from 'angular-meteor';
-import { Meteor } from 'meteor/meteor';
-import { Tasks } from '../../api/tasks.js';
+import {Meteor} from 'meteor/meteor';
+import {Tasks} from '../../api/tasks.js';
 
 import template from './todosList.html';
 
 
 class TodosListCtrl {
-  constructor($scope) {
-    $scope.viewModel(this);
+    constructor($scope) {
+        $scope.viewModel(this);
 
-    this.hideCompleted = false;
+        this.subscribe('tasks');
 
-    this.helpers({
-      tasks() {
+        this.hideCompleted = false;
 
-        const selector = {};
+        this.helpers({
+            tasks() {
 
-        // If hide completed is checked, filter tasks
-        if (this.getReactively('hideCompleted')) {
-          selector.checked = {
-            $ne: true
-          };
-        }
+                const selector = {};
 
-        return Tasks.find(selector, {
-          sort: {
-            createdAt: -1
-          }
-        });
-      },
+                // If hide completed is checked, filter tasks
+                if (this.getReactively('hideCompleted')) {
+                    selector.checked = {
+                        $ne: true
+                    };
+                }
 
-      incompleteCount() {
-        return Tasks.find({
-          checked: {
-            $ne: true
-          }
-        }).count();
-      },
+                return Tasks.find(selector, {
+                    sort: {
+                        createdAt: -1
+                    }
+                });
+            },
 
-      currentUser() {
-        return Meteor.user();
-      }
+            incompleteCount() {
+                return Tasks.find({
+                    checked: {
+                        $ne: true
+                    }
+                }).count();
+            },
 
-    })
-  }
+            currentUser() {
+                return Meteor.user();
+            }
 
-  addTask(newTask) {
-    // Insert a task into the collection
-    Tasks.insert({
-      text: newTask,
-      createdAt: new Date,
-      owner: Meteor.userId(),
-      username: Meteor.user().username
-    });
+        })
+    }
 
-    // Clear form
-    this.newTask = '';
-  }
+    addTask(newTask) {
+        // Insert a task into the collection
+        Meteor.call('tasks.insert', newTask);
+        // Tasks.insert({
+        //   text: newTask,
+        //   createdAt: new Date,
+        //   owner: Meteor.userId(),
+        //   username: Meteor.user().username
+        // });
 
-  setChecked(task) {
-    // Set the checked property to the opposite of its current value
-    Tasks.update(task._id, {
-      $set: {
-        checked: !task.checked
-      },
-    });
-  }
+        // Clear form
+        this.newTask = '';
+    }
 
-  removeTask(task) {
-    Tasks.remove(task._id);
-  }
+    setChecked(task) {
+        // Set the checked property to the opposite of its current value
+        Meteor.call('tasks.setChecked', task._id, !task.checked);
+        // Tasks.update(task._id, {
+        //   $set: {
+        //     checked: !task.checked
+        //   },
+        // });
+    }
+
+    removeTask(task) {
+        Meteor.call('tasks.remove', task._id);
+        // Tasks.remove(task._id);
+    }
+
+    setPrivate(task) {
+        Meteor.call('tasks.setPrivate', task._id, !task.private);
+    }
 
 }
 
 
- 
 export default angular.module('todosList', [
-  angularMeteor
+    angularMeteor
 ])
-  .component('todosList', {
-    templateUrl: 'imports/components/todosList/todosList.html',
-    controller: ['$scope', TodosListCtrl]
-  });
+    .component('todosList', {
+        templateUrl: 'imports/components/todosList/todosList.html',
+        controller: ['$scope', TodosListCtrl]
+    });
